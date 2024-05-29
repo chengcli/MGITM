@@ -251,7 +251,7 @@ module ModPlanet
   real, dimension(nDustLinesMax,nLats,nLons,nBlocksMax) :: HorizontalConrathProfile
 
   real :: DustPressureLevel(nDustPointsMax)
-  real,dimension(nDustLinesMax,nLats,nDustPointsMax,nBlocksMax) :: &
+  real,dimension(nDustLinesMax,nLats,nLons,nDustPointsMax,nBlocksMax) :: &
     CumulativeTauProfile,DustMixingRatioProfile
 
 

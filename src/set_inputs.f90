@@ -272,7 +272,7 @@ subroutine set_inputs
               write(*,*) 'Incorrect format for #DUSTDATA'
               write(*,*) '#DUSTDATA'
               write(*,*) 'UseDustDistribution (logical)'
-              write(*,*) 'DUstFileType (FullHorizontal or MCSVertical)'
+              write(*,*) 'DUstFileType (FullHorizontal or MCSVertical or MCS3DVertical)'
               write(*,*) 'DtDust   (time to update horizontal dust distribution, real, seconds)'
               write(*,*) 'cDustFile'
               write(*,*) 'cConrathFile (only for FullHorizontal)'

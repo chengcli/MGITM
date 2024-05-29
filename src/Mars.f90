@@ -1510,9 +1510,9 @@ end subroutine init_isochem
 ! -----------------------------------------------------------------------
 ! Stuff 3-D internal arrays back into MGITM allocated arrays for usage
   GWDrag(1:nLons,1:nLats,1:nAlts,iEast_,iBlock) = &
-        udrag(1:nLons,1:nLats,1:nAlts)             ![m/s^2]
+        udrag(1:nLons,1:nLats,1:nAlts)*0.5             ![m/s^2]
   GWDrag(1:nLons,1:nLats,1:nAlts,iNorth_,iBlock) = &
-        vdrag(1:nLons,1:nLats,1:nAlts)             ![m/s^2]
+        vdrag(1:nLons,1:nLats,1:nAlts)*0.5             ![m/s^2]
   GWDrag(1:nLons,1:nLats,1:nAlts,iUp_,iBlock) = 0.0
 
   GWIHeat(1:nLons,1:nLats,1:nAlts,iBlock) = &
@@ -1736,9 +1736,9 @@ end subroutine init_isochem
 
              invDDiff = 1 / &
                   (DustTime(iMin(1)+1)-DustTime(imin(1)))
-             TimeFactor = (CurrentTime - Dusttime(imin(1)))*(CumulativeTauProfile(imin(1) + 1,iLat,1:nDustAlts,iBlock) - &
-                  CumulativeTauProfile(imin(1),iLat,1:nDustAlts,iBlock)) * invDDiff
-             tautot(1:nDustAlts) = CumulativeTauProfile(imin(1),ilat,1:nDustAlts,iBlock)+timefactor
+             TimeFactor = (CurrentTime - Dusttime(imin(1)))*(CumulativeTauProfile(imin(1) + 1,iLat,iLon,1:nDustAlts,iBlock) - &
+                  CumulativeTauProfile(imin(1),iLat,iLon,1:nDustAlts,iBlock)) * invDDiff
+             tautot(1:nDustAlts) = CumulativeTauProfile(imin(1),ilat,ilon,1:nDustAlts,iBlock)+timefactor
 
           endif
         isFirstDust(iBlock) = .false.
