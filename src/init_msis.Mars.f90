@@ -494,6 +494,16 @@ subroutine readDustHeader
      nDustLons = 1
 
      allocate(DustLatitude(nDustLats))
+     
+  else if (DustFileType .eq. "MCS3DVertical") then
+     read(iInputUnit_,*,iostat=iError) nDustLats
+     read(iInputUnit_,*,iostat=iError) nDustLons
+     read(iInputUnit_,*,iostat=iError) nDustTimes
+     read(iInputUnit_,*,iostat=iError) nDustAlts
+
+     allocate(DustLatitude(nDustLats))
+     allocate(DustLongitude(nDustLons))
+  
   endif
 
 
@@ -513,13 +523,14 @@ subroutine setTau(iBlock)
   use ModGITM, only : Latitude,Longitude,iproc
 
   integer, intent(IN) :: iBlock
-  real :: TempDust(ndustlats,ndustlons),tempconrath(ndustlats),Temp(nDustLats*nDustLons),MCSTemp(5)
+  real :: TempDust(ndustlats,ndustlons),tempconrath(ndustlats),Temp(nDustLats*nDustLons)
+  real :: MCSTemp(5),MCSTemp3D(6)
   real :: rlat, invLatDiff, LatFind, Latdiff, Dust,templat(ndustlats),templon(ndustlons),conrath,invlondiff
   real :: lathigh,latlow,lonhigh,lonlow, V11, V12, V21, V22
   character (len=iCharLen_) :: cLine
   logical :: notstarted
 
-  real, dimension(nDustTimes,nDustLats,nDustAlts) :: CumulativeTau, DustMixingRatio
+  real, dimension(nDustTimes,nDustLats,nDustLons,nDustAlts) :: CumulativeTau, DustMixingRatio
 
   integer :: TimeArray(7),i ,ilat,ilon,ilatlow(1),ilonlow(1),ialt,itime
 
@@ -629,8 +640,8 @@ if (DustFileType .eq. "FullHorizontal") then
                 call stop_gitm('Stopping in init_msis.Mars')
              endif
              DustPressureLevel(iAlt) = MCSTemp(3)
-             CumulativeTau(iTime,iLat,iAlt) = MCSTemp(4)
-             DustMixingRatio(iTime,iLat,iAlt) = MCSTemp(5)
+             CumulativeTau(iTime,iLat,1,iAlt) = MCSTemp(4)
+             DustMixingRatio(iTime,iLat,1,iAlt) = MCSTemp(5)
 
            enddo
             DustLatitude(iLat) = MCSTemp(1)
@@ -655,40 +666,203 @@ if (DustFileType .eq. "FullHorizontal") then
       invLatdiff = 1/(Lathigh - Latlow)
 
       if (LatFind .lt. DustLatitude(1)) then
-          CumulativeTauProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               CumulativeTau(1:nDustTimes,1,1:nDustAlts)
+          CumulativeTauProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               CumulativeTau(1:nDustTimes,1,1,1:nDustAlts)
 
-          DustMixingRatioProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               DustMixingRatio(1:nDustTimes,1,1:nDustAlts)
+          DustMixingRatioProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               DustMixingRatio(1:nDustTimes,1,1,1:nDustAlts)
 
        else if (LatFind .gt. DustLatitude(nDustLats)) then
 
-          CumulativeTauProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               CumulativeTau(1:nDustTimes,nDustLats,1:nDustAlts)
+          CumulativeTauProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               CumulativeTau(1:nDustTimes,nDustLats,1,1:nDustAlts)
 
-          DustMixingRatioProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               DustMixingRatio(1:nDustTimes,nDustLats,1:nDustAlts)
+          DustMixingRatioProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               DustMixingRatio(1:nDustTimes,nDustLats,1,1:nDustAlts)
 
         else
            !Multiply by .999 to handle case when grids match up.
            !Rounding error can result in negative numbers
 
-          CumulativeTauProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               CumulativeTau(1:nDustTimes,ilatlow(1)+1,1:nDustAlts) - &
+          CumulativeTauProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               CumulativeTau(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts) - &
                (Lathigh-LatFind)*0.999*invLatDiff*&
-               (CumulativeTau(1:nDustTimes,ilatlow(1)+1,1:nDustAlts)-&
-               CumulativeTau(1:nDustTimes,ilatlow(1),1:nDustAlts))
+               (CumulativeTau(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts)-&
+               CumulativeTau(1:nDustTimes,ilatlow(1),1,1:nDustAlts))
 
-          DustMixingRatioProfile(1:nDustTimes,ilat,1:nDustAlts,iblock) = &
-               DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1:nDustAlts) - &
+          DustMixingRatioProfile(1:nDustTimes,ilat,1,1:nDustAlts,iblock) = &
+               DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts) - &
                (Lathigh-LatFind)*0.999*invLatDiff*&
-               (DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1:nDustAlts)-&
-               DustMixingRatio(1:nDustTimes,ilatlow(1),1:nDustAlts))
+               (DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts)-&
+               DustMixingRatio(1:nDustTimes,ilatlow(1),1,1:nDustAlts))
        endif
 
     enddo
- endif
 
+!!!!!!!add  
+  else if (DustFileType .eq. "MCS3DVertical") then
+    !Read in data
+     do iTime = 1, nDustTimes
+        do iLat = 1, nDustLats
+           do iLon = 1, nDustLons
+              do iAlt = 1, nDustAlts
+                 read(iInputUnit_,*,iostat=iError) TimeArray(1:6), MCSTemp3D
+                 if (iError .ne. 0) then
+                    write(*,*) "Error reading dustfile"
+                    call stop_gitm('Stopping in init_msis.Mars')
+                 endif
+                 DustPressureLevel(iAlt) = MCSTemp3D(4)
+                 CumulativeTau(iTime,iLat,iLon,iAlt) = MCSTemp3D(5)
+                 DustMixingRatio(iTime,iLat,iLon,iAlt) = MCSTemp3D(6)
+              enddo
+              DustLongitude(iLon) = MCSTemp3D(2)
+           enddo
+            DustLatitude(iLat) = MCSTemp3D(1)
+        enddo
+
+        TimeArray(7) = 0
+        call time_int_to_real(TimeArray,rTime)
+        TimeDust(iTime) = rtime
+     enddo
+
+    do iLat = 1, nLats
+      do iLon = 1, nLons
+        latFind = Latitude(ilat,iBlock)*180/pi
+        templat = DustLatitude
+        lonFind = Longitude(iLon,iBlock)*180/pi
+        templon = DustLongitude
+  
+        where(LatFind - tempLat .lt. -0.00001) tempLat = -1.0e9
+        ilatlow =  maxloc(tempLat)
+        where(LonFind - tempLon .lt. -0.00001) tempLon = -1.0e9
+        ilonlow =  maxloc(tempLon)
+  
+        if (ilatlow(1) .eq. nDustLats) ilatlow = ilatlow - 1
+        if (ilonlow(1) .eq. nDustLons) ilonlow = ilonlow - 1
+  
+        Latlow = DustLatitude(ilatlow(1))
+        LatHigh = DustLatitude(ilatlow(1)+1)
+        invLatdiff = 1/(Lathigh - Latlow)
+        Lonlow = DustLongitude(ilonlow(1))
+        LonHigh = DustLongitude(ilonlow(1)+1)
+        invLondiff = 1/(Lonhigh - Lonlow)
+  
+        if (LatFind .lt. DustLatitude(1) .and. LonFind .lt. DustLongitude(1)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,1,1,1:nDustAlts)
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,1,1,1:nDustAlts)
+  
+         else if (LatFind .lt. DustLatitude(1).and. &
+           LonFind .gt. DustLongitude(nDustLons)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,1,nDustLons,1:nDustAlts)
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,1,nDustLons,1:nDustAlts)
+                 
+         else if (LatFind .lt. DustLatitude(1) .and. LonFind .ge. DustLongitude(1) &
+           .and. LonFind .le. DustLongitude(nDustLons)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,1,ilonlow(1)+1,1:nDustAlts) - &
+                 (Lonhigh-LonFind)*0.999*invLonDiff*&
+                 (CumulativeTau(1:nDustTimes,1,ilonlow(1)+1,1:nDustAlts)-&
+                 CumulativeTau(1:nDustTimes,1,ilonlow(1),1:nDustAlts))
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,1,ilonlow(1)+1,1:nDustAlts) - &
+                 (Lonhigh-LonFind)*0.999*invLonDiff*&
+                 (DustMixingRatio(1:nDustTimes,1,ilonlow(1)+1,1:nDustAlts)-&
+                 DustMixingRatio(1:nDustTimes,1,ilonlow(1),1:nDustAlts))
+         
+         else if (LatFind .gt. DustLatitude(nDustLats) .and. &
+           LonFind .lt. DustLongitude(1)) then
+  
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,nDustLats,1,1:nDustAlts)
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,nDustLats,1,1:nDustAlts)
+                 
+         else if (LatFind .gt. DustLatitude(nDustLats) .and. &
+           LonFind .gt. DustLongitude(nDustLons)) then
+  
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,nDustLats,nDustLons,1:nDustAlts)
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,nDustLats,nDustLons,1:nDustAlts)
+                 
+         else if (LatFind .gt. DustLatitude(nDustLats) .and. &
+           LonFind .ge. DustLongitude(1) .and. &
+           LonFind .le. DustLongitude(nDustLons)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,nDustLats,ilonlow(1)+1,1:nDustAlts) - &
+                 (Lonhigh-LonFind)*0.999*invLonDiff*&
+                 (CumulativeTau(1:nDustTimes,nDustLats,ilonlow(1)+1,1:nDustAlts)-&
+                 CumulativeTau(1:nDustTimes,nDustLats,ilonlow(1),1:nDustAlts))
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,nDustLats,ilonlow(1)+1,1:nDustAlts) - &
+                 (Lonhigh-LonFind)*0.999*invLonDiff*&
+                 (DustMixingRatio(1:nDustTimes,nDustLats,ilonlow(1)+1,1:nDustAlts)-&
+                 DustMixingRatio(1:nDustTimes,nDustLats,ilonlow(1),1:nDustAlts))
+        else if (LatFind .ge. DustLatitude(1) .and. &
+          LatFind .le. DustLatitude(nDustLats).and. &
+          LonFind .lt. DustLongitude(1)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts) - &
+                 (Lathigh-LatFind)*0.999*invLatDiff*&
+                 (CumulativeTau(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts)-&
+                 CumulativeTau(1:nDustTimes,ilatlow(1),1,1:nDustAlts))
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts) - &
+                 (Lathigh-LatFind)*0.999*invLatDiff*&
+                 (DustMixingRatio(1:nDustTimes,ilatlow(1)+1,1,1:nDustAlts)-&
+                 DustMixingRatio(1:nDustTimes,ilatlow(1),1,1:nDustAlts))
+        else if (LatFind .ge. DustLatitude(1) .and. &
+          LatFind .le. DustLatitude(nDustLats) .and. &
+          LonFind .gt. DustLongitude(nDustLons)) then
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 CumulativeTau(1:nDustTimes,ilatlow(1)+1,nDustLons,1:nDustAlts) - &
+                 (Lathigh-LatFind)*0.999*invLatDiff*&
+                 (CumulativeTau(1:nDustTimes,ilatlow(1)+1,nDustLons,1:nDustAlts)-&
+                 CumulativeTau(1:nDustTimes,ilatlow(1),nDustLons,1:nDustAlts))
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+                 DustMixingRatio(1:nDustTimes,ilatlow(1)+1,nDustLons,1:nDustAlts) - &
+                 (Lathigh-LatFind)*0.999*invLatDiff*&
+                 (DustMixingRatio(1:nDustTimes,ilatlow(1)+1,nDustLons,1:nDustAlts)-&
+                 DustMixingRatio(1:nDustTimes,ilatlow(1),nDustLons,1:nDustAlts))
+  
+          else
+             !Multiply by .999 to handle case when grids match up.
+             !Rounding error can result in negative numbers
+  
+            CumulativeTauProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+              CumulativeTau(1:nDustTimes,ilatlow(1)+1,ilonlow(1)+1,1:nDustAlts) - &
+              (Lathigh-LatFind)*0.999*invLatDiff*&
+              (CumulativeTau(1:nDustTimes,ilatlow(1)+1,ilonlow(1)+1,1:nDustAlts)-&
+              CumulativeTau(1:nDustTimes,ilatlow(1),ilonlow(1)+1,1:nDustAlts)) - &
+              (Lonhigh-LonFind)*0.999*invLonDiff*&
+              (CumulativeTau(1:nDustTimes,ilatlow(1),ilonlow(1)+1,1:nDustAlts)-&
+              CumulativeTau(1:nDustTimes,ilatlow(1),ilonlow(1),1:nDustAlts))
+  
+            DustMixingRatioProfile(1:nDustTimes,ilat,ilon,1:nDustAlts,iblock) = &
+              DustMixingRatio(1:nDustTimes,ilatlow(1)+1,ilonlow(1)+1,1:nDustAlts) - &
+              (Lathigh-LatFind)*0.999*invLatDiff*&
+              (DustMixingRatio(1:nDustTimes,ilatlow(1)+1,ilonlow(1)+1,1:nDustAlts)-&
+              DustMixingRatio(1:nDustTimes,ilatlow(1),ilonlow(1)+1,1:nDustAlts)) - &
+              (Lonhigh-LonFind)*0.999*invLonDiff*&
+              (DustMixingRatio(1:nDustTimes,ilatlow(1),ilonlow(1)+1,1:nDustAlts)-&
+              DustMixingRatio(1:nDustTimes,ilatlow(1),ilonlow(1),1:nDustAlts))
+         endif
+      enddo
+    enddo
+  endif
+!!!!!!!!add
   close(iInputUnit_)
 
 

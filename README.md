@@ -12,6 +12,8 @@ Installation
     compiler on some systems. However, you may opt to specify the
     appropriate compiler (e.g. -compiler=gfortran)
 
+    To activate both gfortran and gcc compilers, use the optin (-compiler=gfortran,gcc\_mpicc)
+
 Compilation
 -----------
 From the installation directory, run:

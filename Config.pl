@@ -9,7 +9,7 @@ our $Code            = 'GITM2';
 our $MakefileDefOrig = 'srcMake/Makefile.def';
 our @Arguments       = @ARGV;
 
-my $config     = "share/Scripts/Config.pl";
+my $config     = "./share/Scripts/Config.pl";
 if(-f $config){
     print "Config: $config";
     require $config;

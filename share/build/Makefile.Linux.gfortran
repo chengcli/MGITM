@@ -10,8 +10,10 @@ SHELL=/bin/sh
 #	GNU gfortran (gfortran) Fortran 90/95 Compiler
 #
 
-COMPILE.f77     = ${CUSTOMPATH_F}gfortran-9
-COMPILE.f90     = ${CUSTOMPATH_F}gfortran-9
+#COMPILE.f77     = ${CUSTOMPATH_F}gfortran-9
+#COMPILE.f90     = ${CUSTOMPATH_F}gfortran-9
+COMPILE.f77     = ${CUSTOMPATH_F}gfortran
+COMPILE.f90     = ${CUSTOMPATH_F}gfortran
 LINK.f90	= ${CUSTOMPATH_MPI}mpif90
 AR = ar -rs
 
